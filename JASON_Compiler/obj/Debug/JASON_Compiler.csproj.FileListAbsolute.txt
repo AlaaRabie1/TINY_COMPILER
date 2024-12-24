@@ -62,3 +62,15 @@ D:\College\Compiler project\Parser-Template - Studs Versions\Parser-Template - S
 D:\College\Compiler project\Parser-Template - Studs Versions\Parser-Template - Studs Versions\JASON_Compiler\obj\Debug\JASON_Compiler.csproj.CoreCompileInputs.cache
 D:\College\Compiler project\Parser-Template - Studs Versions\Parser-Template - Studs Versions\JASON_Compiler\obj\Debug\JASON_Compiler.exe
 D:\College\Compiler project\Parser-Template - Studs Versions\Parser-Template - Studs Versions\JASON_Compiler\obj\Debug\JASON_Compiler.pdb
+C:\uni\archi\compiler123\TINY_COMPILER\JASON_Compiler\bin\Debug\JASON_Compiler.exe.config
+C:\uni\archi\compiler123\TINY_COMPILER\JASON_Compiler\bin\Debug\JASON_Compiler.exe
+C:\uni\archi\compiler123\TINY_COMPILER\JASON_Compiler\bin\Debug\JASON_Compiler.pdb
+C:\uni\archi\compiler123\TINY_COMPILER\JASON_Compiler\obj\Debug\JASON_Compiler.csproj.AssemblyReference.cache
+C:\uni\archi\compiler123\TINY_COMPILER\JASON_Compiler\obj\Debug\JASON_Compiler.csproj.SuggestedBindingRedirects.cache
+C:\uni\archi\compiler123\TINY_COMPILER\JASON_Compiler\obj\Debug\JASON_Compiler.Form1.resources
+C:\uni\archi\compiler123\TINY_COMPILER\JASON_Compiler\obj\Debug\JASON_Compiler.Form2.resources
+C:\uni\archi\compiler123\TINY_COMPILER\JASON_Compiler\obj\Debug\JASON_Compiler.Properties.Resources.resources
+C:\uni\archi\compiler123\TINY_COMPILER\JASON_Compiler\obj\Debug\JASON_Compiler.csproj.GenerateResource.cache
+C:\uni\archi\compiler123\TINY_COMPILER\JASON_Compiler\obj\Debug\JASON_Compiler.csproj.CoreCompileInputs.cache
+C:\uni\archi\compiler123\TINY_COMPILER\JASON_Compiler\obj\Debug\JASON_Compiler.exe
+C:\uni\archi\compiler123\TINY_COMPILER\JASON_Compiler\obj\Debug\JASON_Compiler.pdb

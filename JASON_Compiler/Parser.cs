@@ -43,15 +43,25 @@ namespace JASON_Compiler
         Node Main_Function()
         {
             Node main_function = new Node("Main_Function");
-            if (TokenStream[InputPointer].token_type == Token_Class.Int && TokenStream[InputPointer + 1].token_type == Token_Class.Main ||
+            if (InputPointer < TokenStream.Count && InputPointer + 1 < TokenStream.Count)
+            {
+                if (TokenStream[InputPointer].token_type == Token_Class.Int && TokenStream[InputPointer + 1].token_type == Token_Class.Main ||
                TokenStream[InputPointer].token_type == Token_Class.Float && TokenStream[InputPointer + 1].token_type == Token_Class.Main ||
                TokenStream[InputPointer].token_type == Token_Class.String && TokenStream[InputPointer + 1].token_type == Token_Class.Main)
-            {
-                main_function.Children.Add(Datatype());
-                main_function.Children.Add(match(Token_Class.Main));
-                main_function.Children.Add(match(Token_Class.LParanthesis));
-                main_function.Children.Add(match(Token_Class.RParanthesis));
-                main_function.Children.Add(Function_Body());
+                {
+                    main_function.Children.Add(Datatype());
+                    main_function.Children.Add(match(Token_Class.Main));
+                    main_function.Children.Add(match(Token_Class.LParanthesis));
+                    main_function.Children.Add(match(Token_Class.RParanthesis));
+                    main_function.Children.Add(Function_Body());
+                }
+                else
+                {
+                    Errors.Error_List.Add("Parsing Error: Expected 'Main' function, but none found.\r\n");
+                    InputPointer++;
+                    return null;
+                }
+
             }
             else
             {
@@ -81,17 +91,22 @@ namespace JASON_Compiler
         Node FStatements()
         {
             Node fStatements = new Node("FStatements");
-            if (TokenStream[InputPointer].token_type == Token_Class.Int && TokenStream[InputPointer + 1].token_type != Token_Class.Main ||
+            if (InputPointer < TokenStream.Count && InputPointer + 1 < TokenStream.Count)
+            {
+
+                if (TokenStream[InputPointer].token_type == Token_Class.Int && TokenStream[InputPointer + 1].token_type != Token_Class.Main ||
                TokenStream[InputPointer].token_type == Token_Class.Float && TokenStream[InputPointer + 1].token_type != Token_Class.Main ||
                TokenStream[InputPointer].token_type == Token_Class.String && TokenStream[InputPointer + 1].token_type != Token_Class.Main)
-            {
-                fStatements.Children.Add(Function_Statement());
-                fStatements.Children.Add(FStatements());
+                {
+                    fStatements.Children.Add(Function_Statement());
+                    fStatements.Children.Add(FStatements());
+                }
             }
             else
             {
                 return null;
             }
+            
             return fStatements;
         }
         Node Function_Statement()
@@ -582,11 +597,15 @@ namespace JASON_Compiler
                     // Match stringLine
                     expression.Children.Add(match(Token_Class.String));
                 }
-                else if (TokenStream[InputPointer].token_type == Token_Class.Constant ||
-                         TokenStream[InputPointer].token_type == Token_Class.Identifier)
+                else if ((TokenStream[InputPointer].token_type == Token_Class.Constant &&
+                         TokenStream[InputPointer + 1].token_type == Token_Class.Semicolon) ||
+                         (TokenStream[InputPointer].token_type == Token_Class.Identifier &&
+                         TokenStream[InputPointer + 1].token_type == Token_Class.Semicolon) ||
+                         (TokenStream[InputPointer].token_type == Token_Class.Identifier &&
+                         TokenStream[InputPointer + 1].token_type == Token_Class.LParanthesis))
                 {
-                    // Match Term
-                    expression.Children.Add(Term());
+                        // Match Term
+                        expression.Children.Add(Term());
                 }
                 else if (TokenStream[InputPointer].token_type == Token_Class.LParanthesis ||
                          TokenStream[InputPointer].token_type == Token_Class.Identifier ||
