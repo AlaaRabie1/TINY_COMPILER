@@ -654,16 +654,40 @@ namespace JASON_Compiler
         {
             Node equation = new Node("Equation");
 
-            if (TokenStream[InputPointer].token_type == Token_Class.LParanthesis)
+            if (InputPointer < TokenStream.Count &&
+                TokenStream[InputPointer].token_type == Token_Class.LParanthesis)
             {
                 // Match '('
                 equation.Children.Add(match(Token_Class.LParanthesis));
 
                 // Match inner Equation
-                equation.Children.Add(Equation());
+                Node innerEquation = Equation();
+                if (innerEquation != null)
+                {
+                    equation.Children.Add(innerEquation);
+                }
+                else
+                {
+                    return null; // Invalid Equation inside parentheses
+                }
 
                 // Match ')'
-                equation.Children.Add(match(Token_Class.RParanthesis));
+                if (InputPointer < TokenStream.Count &&
+                    TokenStream[InputPointer].token_type == Token_Class.RParanthesis)
+                {
+                    equation.Children.Add(match(Token_Class.RParanthesis));
+                }
+                else
+                {
+                    return null; // Missing closing parenthesis
+                }
+
+                // Optionally match Operator_Equation
+                Node operatorEquation = Operator_Equation();
+                if (operatorEquation != null)
+                {
+                    equation.Children.Add(operatorEquation);
+                }
             }
             else
             {
@@ -673,11 +697,11 @@ namespace JASON_Compiler
                 {
                     equation.Children.Add(term);
 
-                    // Match Operator_Equation
-                    Node operator_equation = Operator_Equation();
-                    if (operator_equation != null)
+                    // Optionally match Operator_Equation
+                    Node operatorEquation = Operator_Equation();
+                    if (operatorEquation != null)
                     {
-                        equation.Children.Add(operator_equation);
+                        equation.Children.Add(operatorEquation);
                     }
                 }
                 else
@@ -688,38 +712,47 @@ namespace JASON_Compiler
 
             return equation;
         }
+
         Node Operator_Equation()
         {
-            Node operator_equation = new Node("Operator_Equation");
-
-            // Check for Arthematic_Operator
+            // Check if the input has an arithmetic operator
             if (InputPointer < TokenStream.Count &&
                 (TokenStream[InputPointer].token_type == Token_Class.PlusOp ||
                  TokenStream[InputPointer].token_type == Token_Class.MinusOp ||
                  TokenStream[InputPointer].token_type == Token_Class.DivideOp ||
                  TokenStream[InputPointer].token_type == Token_Class.MultiplyOp))
             {
+                Node operatorEquation = new Node("Operator_Equation");
+
                 // Match Arthematic_Operator
-                operator_equation.Children.Add(Arthematic_Operator());
+                Node arithmeticOperator = Arthematic_Operator();
+                if (arithmeticOperator != null)
+                {
+                    operatorEquation.Children.Add(arithmeticOperator);
+                }
+                else
+                {
+                    return null; // No valid operator found
+                }
 
                 // Match Equation
                 Node equation = Equation();
                 if (equation != null)
                 {
-                    operator_equation.Children.Add(equation);
+                    operatorEquation.Children.Add(equation);
+                }
+                else
+                {
+                    return null; // Invalid Equation
                 }
 
-                // Recursively match more Operator_Equation
-                Node next_operator = Operator_Equation();
-                if (next_operator != null)
-                {
-                    operator_equation.Children.Add(next_operator);
-                }
+                return operatorEquation; // Return matched Operator_Equation
             }
 
-            // Epsilon (do nothing for empty production)
-            return operator_equation;
+            // Epsilon (empty production)
+            return null;
         }
+
         Node Arthematic_Operator()
         {
             if (InputPointer < TokenStream.Count)
@@ -744,7 +777,7 @@ namespace JASON_Compiler
                 }
                 else
                 {
-                    return null; // No valid Arthematic_Operator found
+                    return null; // No valid operator found
                 }
 
                 return op;
