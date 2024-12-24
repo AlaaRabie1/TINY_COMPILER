@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -74,9 +75,9 @@ namespace JASON_Compiler
         Node Function_Statements()
         {
             Node function_statements = new Node("Function_Statements");
-            if (TokenStream[InputPointer].token_type == Token_Class.Int && TokenStream[InputPointer + 1].token_type != Token_Class.Main ||
-               TokenStream[InputPointer].token_type == Token_Class.Float && TokenStream[InputPointer + 1].token_type != Token_Class.Main ||
-               TokenStream[InputPointer].token_type == Token_Class.String && TokenStream[InputPointer + 1].token_type != Token_Class.Main)
+            if ((TokenStream[InputPointer].token_type == Token_Class.Int && TokenStream[InputPointer + 1].token_type != Token_Class.Main) ||
+               (TokenStream[InputPointer].token_type == Token_Class.Float && TokenStream[InputPointer + 1].token_type != Token_Class.Main )||
+               (TokenStream[InputPointer].token_type == Token_Class.String && TokenStream[InputPointer + 1].token_type != Token_Class.Main))
             {
                 function_statements.Children.Add(Function_Statement());
                 function_statements.Children.Add(FStatements());
@@ -270,7 +271,7 @@ namespace JASON_Compiler
             else if (TokenStream[InputPointer].token_type == Token_Class.Identifier &&
                      TokenStream[InputPointer + 1].token_type == Token_Class.AssignOp)
             {
-                return Assignment_Statement();
+                return AssignmentState();
             }
             // Check for Declaration_Statement (assuming it's a variable declaration)
             else if (TokenStream[InputPointer].token_type == Token_Class.Int ||
@@ -288,6 +289,10 @@ namespace JASON_Compiler
             else if (TokenStream[InputPointer].token_type == Token_Class.Repeat)
             {
                 return Repeat_Statement();
+            }
+            else if (TokenStream[InputPointer].token_type == Token_Class.Return)
+            {
+                return Return_Statement();
             }
 
             return null; // No valid Statement found
@@ -391,12 +396,8 @@ namespace JASON_Compiler
             Node id = new Node("Id");
 
             // Check for standalone identifier
-            if (InputPointer < TokenStream.Count && TokenStream[InputPointer].token_type == Token_Class.Identifier)
-            {
-                id.Children.Add(match(Token_Class.Identifier));
-            }
             // Check for an assignment statement
-            else if (InputPointer < TokenStream.Count && TokenStream[InputPointer].token_type == Token_Class.Identifier &&
+             if (InputPointer + 1 < TokenStream.Count && TokenStream[InputPointer].token_type == Token_Class.Identifier &&
                      TokenStream[InputPointer + 1].token_type == Token_Class.AssignOp)
             {
                 Node assignment = Assignment_Statement();
@@ -408,6 +409,10 @@ namespace JASON_Compiler
                 {
                     return null; // If no valid assignment statement, return null
                 }
+            }
+            else if (InputPointer < TokenStream.Count &&TokenStream[InputPointer].token_type == Token_Class.Identifier)
+            {
+                id.Children.Add(match(Token_Class.Identifier));
             }
             else
             {
@@ -592,10 +597,10 @@ namespace JASON_Compiler
             {
                 Node expression = new Node("Expression");
 
-                if (TokenStream[InputPointer].token_type == Token_Class.String)
+                if (TokenStream[InputPointer].token_type == Token_Class.Literal)
                 {
                     // Match stringLine
-                    expression.Children.Add(match(Token_Class.String));
+                    expression.Children.Add(match(Token_Class.Literal));
                 }
                 else if ((TokenStream[InputPointer].token_type == Token_Class.Constant &&
                          TokenStream[InputPointer + 1].token_type == Token_Class.Semicolon) ||
@@ -627,43 +632,75 @@ namespace JASON_Compiler
         Node Assignment_Statement()
         {
             Node assignment_statement = new Node("Assignment_Statement");
-
-            // Match identifier
-            assignment_statement.Children.Add(match(Token_Class.Identifier));
-
-            // Match assignmentOp
-            assignment_statement.Children.Add(match(Token_Class.AssignOp));
-
-            // Match Expression
-            Node expr = Expression();
-            if (expr != null)
+            if (TokenStream[InputPointer].token_type == Token_Class.Identifier)
             {
-                assignment_statement.Children.Add(expr);
+                assignment_statement.Children.Add(match(Token_Class.Identifier));
+                assignment_statement.Children.Add(match(Token_Class.AssignOp));
+                assignment_statement.Children.Add(Expression());
             }
             else
             {
-                return null; // Invalid assignment (missing or malformed Expression)
+                return null;
             }
 
-            // Match semicolon
-            assignment_statement.Children.Add(match(Token_Class.Semicolon));
-
             return assignment_statement;
+        }
+        Node AssignmentState()
+        {
+            Node assignmentstate = new Node("AssignmentState");
+            if (TokenStream[InputPointer].token_type == Token_Class.Identifier)
+            {
+                assignmentstate.Children.Add(match(Token_Class.Identifier));
+                assignmentstate.Children.Add(match(Token_Class.AssignOp));
+                assignmentstate.Children.Add(Expression());
+                assignmentstate.Children.Add(match(Token_Class.Semicolon));
+
+            }
+            else
+            {
+                return null;
+            }
+
+            return assignmentstate;
         }
         Node Equation()
         {
             Node equation = new Node("Equation");
 
-            if (TokenStream[InputPointer].token_type == Token_Class.LParanthesis)
+            if (InputPointer < TokenStream.Count &&
+                TokenStream[InputPointer].token_type == Token_Class.LParanthesis)
             {
                 // Match '('
                 equation.Children.Add(match(Token_Class.LParanthesis));
 
                 // Match inner Equation
-                equation.Children.Add(Equation());
+                Node innerEquation = Equation();
+                if (innerEquation != null)
+                {
+                    equation.Children.Add(innerEquation);
+                }
+                else
+                {
+                    return null; // Invalid Equation inside parentheses
+                }
 
                 // Match ')'
-                equation.Children.Add(match(Token_Class.RParanthesis));
+                if (InputPointer < TokenStream.Count &&
+                    TokenStream[InputPointer].token_type == Token_Class.RParanthesis)
+                {
+                    equation.Children.Add(match(Token_Class.RParanthesis));
+                }
+                else
+                {
+                    return null; // Missing closing parenthesis
+                }
+
+                // Optionally match Operator_Equation
+                Node operatorEquation = Operator_Equation();
+                if (operatorEquation != null)
+                {
+                    equation.Children.Add(operatorEquation);
+                }
             }
             else
             {
@@ -673,11 +710,11 @@ namespace JASON_Compiler
                 {
                     equation.Children.Add(term);
 
-                    // Match Operator_Equation
-                    Node operator_equation = Operator_Equation();
-                    if (operator_equation != null)
+                    // Optionally match Operator_Equation
+                    Node operatorEquation = Operator_Equation();
+                    if (operatorEquation != null)
                     {
-                        equation.Children.Add(operator_equation);
+                        equation.Children.Add(operatorEquation);
                     }
                 }
                 else
@@ -688,37 +725,45 @@ namespace JASON_Compiler
 
             return equation;
         }
+
         Node Operator_Equation()
         {
-            Node operator_equation = new Node("Operator_Equation");
-
-            // Check for Arthematic_Operator
+            // Check if the input has an arithmetic operator
             if (InputPointer < TokenStream.Count &&
                 (TokenStream[InputPointer].token_type == Token_Class.PlusOp ||
                  TokenStream[InputPointer].token_type == Token_Class.MinusOp ||
                  TokenStream[InputPointer].token_type == Token_Class.DivideOp ||
                  TokenStream[InputPointer].token_type == Token_Class.MultiplyOp))
             {
+                Node operatorEquation = new Node("Operator_Equation");
+
                 // Match Arthematic_Operator
-                operator_equation.Children.Add(Arthematic_Operator());
+                Node arithmeticOperator = Arthematic_Operator();
+                if (arithmeticOperator != null)
+                {
+                    operatorEquation.Children.Add(arithmeticOperator);
+                }
+                else
+                {
+                    return null; // No valid operator found
+                }
 
                 // Match Equation
                 Node equation = Equation();
                 if (equation != null)
                 {
-                    operator_equation.Children.Add(equation);
+                    operatorEquation.Children.Add(equation);
+                }
+                else
+                {
+                    return null; // Invalid Equation
                 }
 
-                // Recursively match more Operator_Equation
-                Node next_operator = Operator_Equation();
-                if (next_operator != null)
-                {
-                    operator_equation.Children.Add(next_operator);
-                }
+                return operatorEquation; // Return matched Operator_Equation
             }
 
-            // Epsilon (do nothing for empty production)
-            return operator_equation;
+            // Epsilon (empty production)
+            return null;
         }
         Node Arthematic_Operator()
         {
@@ -773,17 +818,16 @@ namespace JASON_Compiler
             if (TokenStream[InputPointer].token_type == Token_Class.Endl)
             {
                 _end.Children.Add(match(Token_Class.Endl));
-                _end.Children.Add(match(Token_Class.Semicolon));
                 return _end;
             }
             else
             {
-                _end.Children.Add(Expression());
-                return _end;
-
+              
+                    _end.Children.Add(Expression());
+                    return _end;
+            
             }
-            return null;
-            // how to handle erros
+           
         }
         Node Read_Statement() // Q i will read only identifier>
         {
