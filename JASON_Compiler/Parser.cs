@@ -41,6 +41,7 @@ namespace JASON_Compiler
             program.Children.Add(Main_Function());
             return program;
         }
+        int count = 0;
         Node Main_Function()
         {
             Node main_function = new Node("Main_Function");
@@ -50,6 +51,13 @@ namespace JASON_Compiler
                TokenStream[InputPointer].token_type == Token_Class.Float && TokenStream[InputPointer + 1].token_type == Token_Class.Main ||
                TokenStream[InputPointer].token_type == Token_Class.String && TokenStream[InputPointer + 1].token_type == Token_Class.Main)
                 {
+                    count++;
+                    if(count>1)
+                    {
+                        Errors.Error_List.Add("Parsing Error: Expected one 'Main' function, but more than one found\r\n");
+                        InputPointer++;
+                        return null;
+                    }
                     main_function.Children.Add(Datatype());
                     main_function.Children.Add(match(Token_Class.Main));
                     main_function.Children.Add(match(Token_Class.LParanthesis));
@@ -464,68 +472,42 @@ namespace JASON_Compiler
         Node Function_Call()
         {
             Node functionCall = new Node("Function_Call");
-
-            // Match the identifier
-            Node identifier = match(Token_Class.Identifier);
-            if (identifier != null)
+            if (TokenStream[InputPointer].token_type == Token_Class.Identifier)
             {
-                functionCall.Children.Add(identifier);
+                functionCall.Children.Add(match(Token_Class.Identifier));
+                functionCall.Children.Add(match(Token_Class.LParanthesis));
+                functionCall.Children.Add(Id_list());
+                functionCall.Children.Add(match(Token_Class.RParanthesis));
             }
             else
             {
-                return null; // If no identifier, return null
+                return null;
             }
-
-            // Match '('
-            Node leftParenthesis = match(Token_Class.LParanthesis);
-            if (leftParenthesis != null)
-            {
-                functionCall.Children.Add(leftParenthesis);
-            }
-            else
-            {
-                return null; // If no '(', return null
-            }
-
-            // Parse the Id_list (it could be epsilon)
-            Node idList = Id_list();
-            if (idList != null)
-            {
-                functionCall.Children.Add(idList);
-            }
-
-            // Match ')'
-            Node rightParenthesis = match(Token_Class.RParanthesis);
-            if (rightParenthesis != null)
-            {
-                functionCall.Children.Add(rightParenthesis);
-            }
-            else
-            {
-                return null; // If no ')', return null
-            }
-
             return functionCall;
         }
+
 
         Node Id_list()
         {
             Node idList = new Node("Id_list");
 
             // Check if the next token is an identifier
-            if (InputPointer < TokenStream.Count && TokenStream[InputPointer].token_type == Token_Class.Identifier)
+            if (TokenStream[InputPointer].token_type == Token_Class.Constant ||
+                TokenStream[InputPointer].token_type == Token_Class.Identifier ||
+                TokenStream[InputPointer].token_type == Token_Class.Literal ||
+                TokenStream[InputPointer].token_type == Token_Class.LParanthesis)
             {
                 // Match the identifier
-                idList.Children.Add(match(Token_Class.Identifier));
+                //idList.Children.Add(match(Token_Class.Identifier));
+                idList.Children.Add(Expression());
+                idList.Children.Add(Id_list_prime());
 
-                // Parse the continuation (Id_list’)
-                Node idListPrime = Id_list_prime();
-                if (idListPrime != null)
-                {
-                    idList.Children.Add(idListPrime);
-                }
             }
-            // Epsilon is implicitly handled by returning the empty node
+            else
+            {
+                return null;
+            }
+
             return idList;
         }
         Node Id_list_prime()
@@ -533,30 +515,19 @@ namespace JASON_Compiler
             Node idListPrime = new Node("Id_list'");
 
             // Check if the next token is a comma
-            if (InputPointer < TokenStream.Count && TokenStream[InputPointer].token_type == Token_Class.Comma)
+            if (TokenStream[InputPointer].token_type == Token_Class.Comma)
             {
                 // Match the comma
                 idListPrime.Children.Add(match(Token_Class.Comma));
+                //idListPrime.Children.Add(match(Token_Class.Identifier));
+                idListPrime.Children.Add(Expression());
 
-                // Match the next identifier
-                Node identifier = match(Token_Class.Identifier);
-                if (identifier != null)
-                {
-                    idListPrime.Children.Add(identifier);
-
-                    // Recursively parse the continuation
-                    Node moreIdentifiers = Id_list_prime();
-                    if (moreIdentifiers != null)
-                    {
-                        idListPrime.Children.Add(moreIdentifiers);
-                    }
-                }
-                else
-                {
-                    return null; // If no valid identifier after the comma, return null
-                }
+                idListPrime.Children.Add(Id_list_prime());
             }
-            // Epsilon is implicitly handled by returning the empty node
+            else
+            {
+                return null;
+            }
             return idListPrime;
         }
 
